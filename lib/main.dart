@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
+import 'screens/auth_wrapper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,16 +21,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Smart Study Planner',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Firebase Connected'),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
         ),
-        body: const Center(
-          child: Text('Firebase Successfully Initialized'),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Smart Study Planner',
+        theme: ThemeData(
+          primarySwatch: Colors.indigo,
         ),
+        home: const AuthWrapper(),
       ),
     );
   }
