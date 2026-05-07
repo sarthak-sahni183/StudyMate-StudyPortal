@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/user.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -35,20 +36,23 @@ class AuthService {
         password: password,
       );
 
-      // Save custom user data
-      await _db.collection('users').doc(userCredential.user!.uid).set({
-        'name': name,
-        'age': int.tryParse(age) ?? 0,
-        'email': email,
-        'createdAt': FieldValue.serverTimestamp(),
-        'streak': 0,
-        'totalStudyTime': 0,
-        'totalSessions': 0,
-        'avgProductivity': "0",
-        'weekActivity': [false, false, false, false, false, false, false],
-      });
+      // Create the new User Model with starting stats
+      UserModel newUser = UserModel(
+        uid: userCredential.user!.uid,
+        name: name,
+        email: email,
+        age: int.tryParse(age) ?? 0,
+        streak: 0,
+        totalStudyTime: 0,
+        totalSessions: 0,
+        avgProductivity: 0.0,
+        weekActivity: [false, false, false, false, false, false, false],
+      );
 
-      return null; // Return null on success
+      // Push the model to Firestore using .toMap()
+      await _db.collection('users').doc(newUser.uid).set(newUser.toMap());
+
+      return null; 
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         return 'The password provided is too weak (minimum 6 characters).';
