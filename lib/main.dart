@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
-import 'providers/session_provider.dart';
-import 'screens/auth_wrapper.dart';
+import 'providers/database_provider.dart'; // <-- 1. Add this import!
+import 'screens/auth_wrapper.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,16 +27,16 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(),
         ),
+        // <-- 2. Add the DatabaseProvider here! -->
         ChangeNotifierProvider(
-          create: (_) => SessionProvider(),
+          create: (_) => DatabaseProvider(), 
         ),
       ],
-      
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Smart Study Planner',
         theme: ThemeData(
-          primarySwatch: Colors.indigo,
+          primarySwatch: Colors.green, // Changed to green to match your new UI theme!
         ),
         home: const AuthWrapper(),
       ),

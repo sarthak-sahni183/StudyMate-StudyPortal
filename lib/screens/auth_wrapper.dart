@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:studymate_studytracker/screens/main_layout.dart';
 
 import 'auth/login_screen.dart';
-import 'dashboard/dashboard_screen.dart';
+import 'dashboard_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -25,7 +26,7 @@ class AuthWrapper extends StatelessWidget {
 
         // Logged In
         if (snapshot.hasData) {
-          return const DashboardScreen();
+          return const MainLayout();
         }
 
         // Not Logged In
