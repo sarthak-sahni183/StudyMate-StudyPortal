@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../providers/database_provider.dart';
 import '../../models/user.dart';
+import '../../models/goal.dart';
+import 'add_goal_screen.dart'; // Make sure this file exists!
 
 class DashboardScreen extends StatelessWidget {
   final VoidCallback? onNavigateToSession;
@@ -14,14 +16,14 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Get the currently logged-in user's ID
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    // Get the DatabaseProvider to access the stream
+    // Get the DatabaseProvider to access the streams
     final dbProvider = Provider.of<DatabaseProvider>(context, listen: false);
 
     final List<String> dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     return Scaffold(
       backgroundColor: const Color(0xffF7F9FC),
-      // StreamBuilder automatically listens to our Firebase document
+      // StreamBuilder automatically listens to our Firebase User document
       body: StreamBuilder<UserModel>(
         stream: dbProvider.getUserStream(uid),
         builder: (context, snapshot) {
@@ -30,7 +32,6 @@ class DashboardScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator(color: Colors.green));
           }
 
-          // NEW: This will print the EXACT error to your screen (e.g., Permission Denied)
           if (snapshot.hasError) {
             return Center(
               child: Text(
@@ -46,7 +47,6 @@ class DashboardScreen extends StatelessWidget {
           }
           
           UserModel user = snapshot.data!;
-          // ... rest of the code
 
           return SafeArea(
             child: SingleChildScrollView(
@@ -59,38 +59,22 @@ class DashboardScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                        child: const Icon(Icons.menu, color: Colors.green),
-                      ),
                       Column(
-                        children: [
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
                           Row(
-                            children: const [
+                            children: [
                               Icon(Icons.menu_book_rounded, color: Colors.green),
                               SizedBox(width: 6),
-                              Text("Smart Study", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                              Text("Study Mate", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                             ],
                           ),
-                          const Text("Planner", style: TextStyle(color: Colors.grey)),
                         ],
                       ),
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                        child: PopupMenuButton(
-                          icon: const Icon(Icons.person, color: Colors.green),
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              child: const Text("Logout"),
-                              onTap: () async {
-                                await Future.delayed(Duration.zero);
-                                await FirebaseAuth.instance.signOut();
-                              },
-                            ),
-                          ],
-                        ),
+                        child: const Icon(Icons.person, color: Colors.green),
                       ),
                     ],
                   ),
@@ -105,7 +89,6 @@ class DashboardScreen extends StatelessWidget {
                           children: [
                             const Text("Welcome back,", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
                             const SizedBox(height: 10),
-                            // Dynamically loading name from UserModel
                             Text("${user.name}!", style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.green)),
                             const SizedBox(height: 16),
                             const Text("Stay consistent, stay focused,\nachieve greatness! ✨", style: TextStyle(fontSize: 17, height: 1.5, color: Colors.black87)),
@@ -148,7 +131,6 @@ class DashboardScreen extends StatelessWidget {
                                 children: [
                                   const Text("Current Streak", style: TextStyle(fontSize: 18)),
                                   const SizedBox(height: 8),
-                                  // Dynamically loading streak from UserModel
                                   Text("${user.streak} days", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.green)),
                                 ],
                               ),
@@ -160,9 +142,7 @@ class DashboardScreen extends StatelessWidget {
                         // --- DYNAMIC TICKS ---
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          // Generate ticks mapping the dayNames list to the user's weekActivity list
                           children: List.generate(7, (index) {
-                            // Adding a safety check in case the array size mismatches
                             bool isCompleted = index < user.weekActivity.length ? user.weekActivity[index] : false;
                             return buildDayCircle(dayNames[index], isCompleted);
                           }),
@@ -172,32 +152,65 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 30),
 
-                  // --- ACTION CARDS ---
-                  Column(
+                  // --- UPCOMING GOALS SECTION ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      buildActionCard(
-                        title: "Start a Session",
-                        subtitle: "Focus, study and get things done.",
-                        color: Colors.green.shade50,
-                        icon: Icons.timer_outlined,
-                        buttonColor: Colors.green,
-                        onTap: () => onNavigateToSession?.call(),
+                      const Text(
+                        "Upcoming Goals",
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 16),
-                      buildActionCard(
-                        title: "See Analytics",
-                        subtitle: "Track your progress and improve every day.",
-                        color: Colors.blue.shade50,
-                        icon: Icons.bar_chart_rounded,
-                        buttonColor: Colors.blue,
-                        onTap: () {
-                           // Navigate to analytics in the future
+                      TextButton(
+                        onPressed: () {
+                          // Navigate to the Add Goal screen
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const AddGoalScreen()));
                         },
+                        child: const Text("+ Add New", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  
+                  // Secondary StreamBuilder just for the Goals collection
+                  StreamBuilder<List<GoalModel>>(
+                    stream: dbProvider.getGoalsStream(uid),
+                    builder: (context, goalSnapshot) {
+                      if (goalSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator(color: Colors.green)));
+                      }
+
+                      if (!goalSnapshot.hasData || goalSnapshot.data!.isEmpty) {
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                          child: const Column(
+                            children: [
+                              Icon(Icons.flag_outlined, size: 40, color: Colors.grey),
+                              SizedBox(height: 10),
+                              Text("No upcoming goals yet.", style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // Map the Firebase Goal models into UI Cards
+                      // Map the Firebase Goal models into UI Cards
+                      return Column(
+                        children: goalSnapshot.data!.map((goal) => buildGoalCard(
+                          goalId: goal.id,        // <-- NEW
+                          goal: goal.title, 
+                          description: goal.description, 
+                          date: goal.deadline,
+                          db: dbProvider,         // <-- NEW
+                          uid: uid,               // <-- NEW
+                        )).toList(),
+                      );
+                    }
+                  ),
                   const SizedBox(height: 30),
 
+                  // --- ACTION CARDS (Remaining) ---
                   // --- TODAY OVERVIEW ---
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -215,7 +228,6 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(height: 20),
                         Column(
                           children: [    
-                            // Dynamically loading stats from UserModel
                             buildOverviewCard(
                               title: "${user.totalStudyTime} min", 
                               subtitle: "Total Study Time", 
@@ -271,6 +283,97 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  // Parses the date and calculates days left automatically
+  // Parses the date and calculates days left automatically
+  Widget buildGoalCard({
+    required String goalId,
+    required String goal, 
+    required String description, 
+    required DateTime date,
+    required DatabaseProvider db,
+    required String uid,
+  }) {
+    // Calculate how many days are left from today
+    final int daysLeft = date.difference(DateTime.now()).inDays;
+    
+    // Dynamic text and color based on urgency
+    String timeLeftText = daysLeft < 0 ? "Overdue" : daysLeft == 0 ? "Due Today" : "$daysLeft days left";
+    Color urgencyColor = daysLeft < 0 ? Colors.red : daysLeft <= 3 ? Colors.orange : Colors.green;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10),
+        ],
+      ),
+      child: Row(
+        children: [
+          // THE NEW CHECKMARK BUTTON
+          InkWell(
+            onTap: () async {
+              // Trigger the completion! The stream will auto-refresh and hide this card.
+              await db.completeGoal(uid: uid, goalId: goalId);
+            },
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: urgencyColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: urgencyColor, width: 2),
+              ),
+              child: Icon(Icons.check, color: urgencyColor, size: 24),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  goal, 
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description, 
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "${date.day}/${date.month}/${date.year}", 
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black54)
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: urgencyColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10)
+                ),
+                child: Text(
+                  timeLeftText, 
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: urgencyColor)
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
   Widget buildActionCard({required String title, required String subtitle, required Color color, required IconData icon, required Color buttonColor, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,

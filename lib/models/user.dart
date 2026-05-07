@@ -12,6 +12,7 @@ class UserModel {
   final int totalSessions;
   final double avgProductivity;
   final List<bool> weekActivity;
+  final DateTime? lastSessionDate;
 
   UserModel({
     required this.uid,
@@ -23,6 +24,7 @@ class UserModel {
     required this.totalSessions,
     required this.avgProductivity,
     required this.weekActivity,
+    this.lastSessionDate,
   });
 
   // Convert to Firebase Map
@@ -37,6 +39,7 @@ class UserModel {
       'totalSessions': totalSessions,
       'avgProductivity': avgProductivity,
       'weekActivity': weekActivity,
+      'lastSessionDate': lastSessionDate != null ? Timestamp.fromDate(lastSessionDate!) : null,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -62,5 +65,6 @@ class UserModel {
       weekActivity: List<bool>.from(
         data?['weekActivity'] ?? [false, false, false, false, false, false, false]
       ),
+      lastSessionDate: (data?['lastSessionDate'] as Timestamp?)?.toDate(),
     );
   }}

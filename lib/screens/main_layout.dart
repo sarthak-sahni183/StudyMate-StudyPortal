@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'dashboard_screen.dart'; 
 import 'study_session_screen.dart'; 
 
+import 'analytics_screen.dart';
+
+import 'profile_screen.dart';
+
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
 
@@ -25,8 +29,8 @@ class _MainLayoutState extends State<MainLayout> {
         },
       ),
       const StudySessionScreen(), // The timer screen we built previously
-      const Center(child: Text("Analytics Coming Soon", style: TextStyle(fontSize: 20))),
-      const Center(child: Text("Profile Coming Soon", style: TextStyle(fontSize: 20))),
+      const AnalyticsScreen(),
+      const ProfileScreen(),
     ];
 
     return Scaffold(

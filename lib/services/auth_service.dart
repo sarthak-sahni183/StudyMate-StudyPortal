@@ -47,6 +47,7 @@ class AuthService {
         totalSessions: 0,
         avgProductivity: 0.0,
         weekActivity: [false, false, false, false, false, false, false],
+        lastSessionDate: null,
       );
 
       // Push the model to Firestore using .toMap()
