@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "474178090895",
+    "project_id": "studymate-studytracker",
+    "storage_bucket": "studymate-studytracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474178090895:android:dde27cbf18708566df3dfa",
+        "android_client_info": {
+          "package_name": "com.example.studymate_studytracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcNM9UXrxNmHHm8SAUaFo7XcZtyxvVt0Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
