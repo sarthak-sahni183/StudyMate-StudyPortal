@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/session_provider.dart';
 import 'screens/auth_wrapper.dart';
 
 Future<void> main() async {
@@ -26,7 +27,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => SessionProvider(),
+        ),
       ],
+      
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Smart Study Planner',

@@ -21,6 +21,12 @@ Future<User?> signUp(
       password: password,
     );
 
+    // CREATE USER DATA
+    await _firestoreService.createUserData(
+      uid: userCredential.user!.uid,
+      email: email,
+    );
+
     // SUCCESS LOG
     await _firestoreService.addAuthLog(
       email: email,
@@ -44,8 +50,6 @@ Future<User?> signUp(
     return null;
   }
 }
-
-
 
 Future<User?> login(
     String email,
