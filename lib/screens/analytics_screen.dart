@@ -1,5 +1,3 @@
-// lib/screens/analytics_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -44,37 +42,49 @@ class AnalyticsScreen extends StatelessWidget {
               children: [
                 _buildSummaryCards(user),
                 const SizedBox(height: 30),
-                const Text("Weekly Activity", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                _buildBarChart(user),
-                const SizedBox(height: 30),
-                const Text("Subject Breakdown", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
+                
+                // We wrap both charts in the Sessions Stream so they use REAL data!
                 StreamBuilder<List<StudySession>>(
                   stream: dbProvider.getSessionsStream(uid),
                   builder: (context, sessionSnapshot) {
                     if (sessionSnapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Colors.green)));
                     }
-                    if (!sessionSnapshot.hasData || sessionSnapshot.data!.isEmpty) {
-                      return Container(
-                        height: 250,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "No subject breakdown available yet.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      );
-                    }
-                    return _buildSubjectPieChart(sessionSnapshot.data!);
+                    
+                    final sessions = sessionSnapshot.data ?? [];
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Weekly Activity", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        _buildBarChart(sessions), // Now passes REAL sessions!
+                        
+                        const SizedBox(height: 30),
+                        const Text("Subject Breakdown", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        
+                        if (sessions.isEmpty)
+                          Container(
+                            height: 250,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+                            ),
+                            child: const Center(
+                              child: Text(
+                                "No subject breakdown available yet.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        else
+                          _buildSubjectPieChart(sessions),
+                      ],
+                    );
                   },
                 ),
               ],
@@ -119,10 +129,30 @@ class AnalyticsScreen extends StatelessWidget {
   }
 
   // --- Bar Chart: Weekly Activity ---
-  Widget _buildBarChart(UserModel user) {
+  Widget _buildBarChart(List<StudySession> sessions) {
+    // 1. Calculate minutes per day for the CURRENT week
+    List<double> weekMinutes = List.filled(7, 0.0);
+    DateTime now = DateTime.now();
+    DateTime startOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+
+    for (var session in sessions) {
+      if (!session.isCompleted) continue;
+      DateTime sessionDate = session.startTime.toDate();
+      
+      // Check if session is from this current week
+      if (sessionDate.isAfter(startOfWeek.subtract(const Duration(seconds: 1)))) {
+        int weekdayIndex = sessionDate.weekday - 1; // 0 = Mon, 6 = Sun
+        weekMinutes[weekdayIndex] += _calculateSessionMinutes(session).toDouble();
+      }
+    }
+
+    // 2. Determine the Max Y axis automatically
+    double maxMinutes = weekMinutes.reduce((a, b) => a > b ? a : b);
+    double maxY = maxMinutes > 0 ? maxMinutes * 1.2 : 60.0; // Give headroom, default to 60m
+
     return Container(
       height: 250,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.only(top: 30, right: 20, left: 10, bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -131,8 +161,17 @@ class AnalyticsScreen extends StatelessWidget {
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: 10, // You can make this dynamic based on max study hours
-          barTouchData: BarTouchData(enabled: false),
+          maxY: maxY, // Dynamically scales to your longest study day
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                return BarTooltipItem(
+                  '${rod.toY.toInt()} min',
+                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                );
+              },
+            ),
+          ),
           titlesData: FlTitlesData(
             show: true,
             bottomTitles: AxisTitles(
@@ -151,27 +190,44 @@ class AnalyticsScreen extends StatelessWidget {
                     case 6: text = 'S'; break;
                     default: text = ''; break;
                   }
-                  return SideTitleWidget(meta: meta, space: 4, child: Text(text, style: style));
+                  return SideTitleWidget(meta: meta, space: 8, child: Text(text, style: style));
                 },
               ),
             ),
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                getTitlesWidget: (value, meta) {
+                  return Text("${value.toInt()}m", style: const TextStyle(color: Colors.grey, fontSize: 10));
+                },
+              )
+            ),
             topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
             rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
-          gridData: FlGridData(show: false),
+          gridData: FlGridData(
+            show: true, 
+            drawVerticalLine: false,
+            horizontalInterval: maxY / 4 == 0 ? 1 : maxY / 4,
+            getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1)
+          ),
           borderData: FlBorderData(show: false),
           barGroups: List.generate(7, (index) {
-            // Placeholder: currently using weekActivity booleans to show bars of height 5 if active
-            bool isActive = index < user.weekActivity.length ? user.weekActivity[index] : false;
+            double minutes = weekMinutes[index];
             return BarChartGroupData(
               x: index,
               barRods: [
                 BarChartRodData(
-                  toY: isActive ? 5 : 1, // Change this to actual study hours per day if you track it
-                  color: isActive ? Colors.green : Colors.grey.shade300,
+                  toY: minutes, 
+                  color: minutes > 0 ? Colors.green : Colors.grey.shade300,
                   width: 16,
                   borderRadius: BorderRadius.circular(4),
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: true,
+                    toY: maxY,
+                    color: Colors.grey.shade100, // Light background track for the bar
+                  )
                 )
               ],
             );
@@ -181,6 +237,7 @@ class AnalyticsScreen extends StatelessWidget {
     );
   }
 
+  // --- Pie Chart: Subject Breakdown ---
   Widget _buildSubjectPieChart(List<StudySession> sessions) {
     final subjectHours = _aggregateSubjectHours(sessions);
     final List<Color> sectionColors = [Colors.blue, Colors.orange, Colors.green, Colors.purple, Colors.red, Colors.teal];
@@ -214,7 +271,7 @@ class AnalyticsScreen extends StatelessWidget {
           color: sectionColors[i],
           value: subject.value,
           title: '${subject.key}\n${subject.value.toStringAsFixed(1)}h',
-          radius: 48,
+          radius: 60,
           titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       );
@@ -238,6 +295,7 @@ class AnalyticsScreen extends StatelessWidget {
     );
   }
 
+  // --- Aggregation Logic ---
   Map<String, double> _aggregateSubjectHours(List<StudySession> sessions) {
     final Map<String, double> subjectHours = {};
 
@@ -253,13 +311,22 @@ class AnalyticsScreen extends StatelessWidget {
     return subjectHours;
   }
 
+  // THE FIX: Accurate Time Calculation!
   int _calculateSessionMinutes(StudySession session) {
+    // 1. If actualDuration exists, use it!
+    if (session.actualDuration != null && session.actualDuration! > 0) {
+      return session.actualDuration!;
+    }
+    
+    // 2. Fallback: Calculate from start and end time manually
     if (session.endTime != null) {
       final duration = session.endTime!.toDate().difference(session.startTime.toDate()).inMinutes;
       if (duration > 0) {
         return duration;
       }
     }
+    
+    // 3. Absolute fallback: the planned duration
     return session.plannedDuration;
   }
 }
