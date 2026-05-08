@@ -22,14 +22,6 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black54),
-            onPressed: () {
-              // Navigate to settings if needed
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<UserModel>(
         stream: dbProvider.getUserStream(uid),

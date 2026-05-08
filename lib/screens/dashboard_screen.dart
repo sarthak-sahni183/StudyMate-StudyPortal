@@ -71,11 +71,6 @@ class DashboardScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                        child: const Icon(Icons.person, color: Colors.green),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 30),
@@ -221,7 +216,6 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         Column(
                           children: const [
-                            Icon(Icons.access_time_filled, color: Colors.green),
                             SizedBox(height: 12),
                             Text("Today's Overview", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                           ],
