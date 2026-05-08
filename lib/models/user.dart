@@ -45,7 +45,6 @@ class UserModel {
   }
 
   // Convert from Firebase Document
-  // Convert from Firebase Document
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>?;
 
@@ -58,8 +57,7 @@ class UserModel {
       totalStudyTime: data?['totalStudyTime'] ?? 0,
       totalSessions: data?['totalSessions'] ?? 0,
       
-      // FIX IS HERE: Converts it to a string first, then safely parses it to a double.
-      // This works perfectly whether Firebase stored it as "0", 0, or 4.5!
+      // This works perfectly whether Firebase stored it as "0", 0, or 4.5
       avgProductivity: double.tryParse(data?['avgProductivity']?.toString() ?? '0') ?? 0.0,
       
       weekActivity: List<bool>.from(

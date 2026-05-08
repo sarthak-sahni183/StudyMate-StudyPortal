@@ -32,7 +32,7 @@ class GoalModel {
       id: doc.id,
       title: data?['title'] ?? 'Untitled Goal',
       description: data?['description'] ?? '',
-      // Convert Firebase Timestamp back to Dart DateTime safely
+      // Convert Firebase Timestamp back to Dart DateTime 
       deadline: (data?['deadline'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isCompleted: data?['isCompleted'] ?? false,
     );

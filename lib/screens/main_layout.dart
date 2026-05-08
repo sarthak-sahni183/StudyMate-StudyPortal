@@ -21,7 +21,7 @@ class _MainLayoutState extends State<MainLayout> {
     // We define the screens inside the build method so they can access the setState of _currentIndex
     final List<Widget> screens = [
       DashboardScreen(
-        // This is the callback from the "Start a Session" button!
+        // This is the callback from the "Start a Session" button
         onNavigateToSession: () {
           setState(() {
             _currentIndex = 1; // 1 is the index of the Session Tab

@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // ANIMATED CONTAINER FOR ERROR BLINK
+              
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 400), // Smooth fade in/out
                   padding: const EdgeInsets.all(20),

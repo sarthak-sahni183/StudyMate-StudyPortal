@@ -43,7 +43,7 @@ class AnalyticsScreen extends StatelessWidget {
                 _buildSummaryCards(user),
                 const SizedBox(height: 30),
                 
-                // We wrap both charts in the Sessions Stream so they use REAL data!
+                
                 StreamBuilder<List<StudySession>>(
                   stream: dbProvider.getSessionsStream(uid),
                   builder: (context, sessionSnapshot) {
@@ -313,7 +313,7 @@ class AnalyticsScreen extends StatelessWidget {
 
   // THE FIX: Accurate Time Calculation!
   int _calculateSessionMinutes(StudySession session) {
-    // 1. If actualDuration exists, use it!
+    // 1. If actualDuration exists, use it
     if (session.actualDuration != null && session.actualDuration! > 0) {
       return session.actualDuration!;
     }

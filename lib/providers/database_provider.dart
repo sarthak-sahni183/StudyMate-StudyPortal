@@ -17,9 +17,7 @@ class DatabaseProvider with ChangeNotifier {
   }
 
 
-  // ==========================================
   // GOAL METHODS
-  // ==========================================
 
   /// Add a new goal to the user's subcollection
   Future<void> addGoal({
@@ -90,9 +88,7 @@ class DatabaseProvider with ChangeNotifier {
         });
   }
 
-  // ==========================================
   // SUBJECT METHOD
-  // ==========================================
 
   /// Adds a subject and RETURNS the generated ID so the UI dropdown can select it immediately
   Future<String> addSubject({
@@ -127,7 +123,6 @@ class DatabaseProvider with ChangeNotifier {
     }
   }
 
-  // ... (Keep the getSubjectsStream method from before here) ...
    Stream<List<Subject>> getSubjectsStream(String uid) {
     return _db
         .collection('users')
@@ -140,9 +135,7 @@ class DatabaseProvider with ChangeNotifier {
             .toList());
   }
 
-  // ==========================================
   // SESSION METHODS (The New Lifecycle)
-  // ==========================================
 
   /// 1. Called when the user hits "Start"
   /// Returns the sessionId so the UI can hold onto it while the timer runs
@@ -176,10 +169,6 @@ class DatabaseProvider with ChangeNotifier {
   }
 
   /// 2. Called when the session ends and the user submits their rating
-  /// 2. Called when the session ends and the user submits their rating
-  /// Notice we added 'duration' so we can add it to the user's total!
-  /// 2. Called when the session ends and the user submits their rating
-  /// 2. Called when the session ends and the user submits their rating
   Future<void> finishAndRateSession({
     required String uid,
     required String sessionId,
@@ -187,7 +176,7 @@ class DatabaseProvider with ChangeNotifier {
     // REMOVED 'duration' parameter - we calculate it automatically now!
   }) async {
     try {
-      // --- 1. CALCULATE ACTUAL ELAPSED TIME ---
+      // 1. CALCULATE ACTUAL ELAPSED TIME 
       DocumentReference sessionRef = _db.collection('users').doc(uid).collection('sessions').doc(sessionId);
       DocumentSnapshot sessionSnap = await sessionRef.get();
       
@@ -199,7 +188,7 @@ class DatabaseProvider with ChangeNotifier {
       // If they finished in less than 60 seconds, give them at least 1 minute of credit
       if (actualDurationMinutes < 1) actualDurationMinutes = 1;
 
-      // --- 2. UPDATE SESSION DOCUMENT ---
+      //  2. UPDATE SESSION DOCUMENT 
       await sessionRef.update({
         'productivity': productivityRating,
         'endTime': FieldValue.serverTimestamp(), 
@@ -207,7 +196,7 @@ class DatabaseProvider with ChangeNotifier {
         'isCompleted': true,
       });
 
-      // --- 3. MATHEMATICALLY UPDATE THE USER'S DASHBOARD STATS ---
+      //  3. MATHEMATICALLY UPDATE THE USER'S DASHBOARD STATS 
       DocumentReference userRef = _db.collection('users').doc(uid);
       DocumentSnapshot userDoc = await userRef.get();
       if (!userDoc.exists) return;
@@ -219,7 +208,7 @@ class DatabaseProvider with ChangeNotifier {
       int newTotalTime = user.totalStudyTime + actualDurationMinutes;
       double newAvgProductivity = ((user.avgProductivity * user.totalSessions) + productivityRating) / newTotalSessions;
 
-      // --- 4. THE STREAK & WEEK BUBBLE MATH ---
+      // 4. THE STREAK & WEEK BUBBLE MATH 
       DateTime now = DateTime.now();
       DateTime today = DateTime(now.year, now.month, now.day);
       
@@ -252,7 +241,7 @@ class DatabaseProvider with ChangeNotifier {
         }
       }
 
-      // --- 5. Push everything to Firebase ---
+      // 5. Push everything to Firebase 
       await userRef.update({
         'totalSessions': newTotalSessions,
         'totalStudyTime': newTotalTime,
@@ -268,7 +257,7 @@ class DatabaseProvider with ChangeNotifier {
     }
   }
 
-  // --- NEW METHOD ---
+  //  NEW METHOD 
   // Create a stream for the UserModel so the Dashboard updates instantly!
   Stream<UserModel> getUserStream(String uid) {
     return _db

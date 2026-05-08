@@ -259,7 +259,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // --- Helper Widgets ---
+  // Helper Widgets 
   
   Widget buildDayCircle(String day, bool completed) {
     return Column(
@@ -279,7 +279,6 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // Parses the date and calculates days left automatically
   // Parses the date and calculates days left automatically
   Widget buildGoalCard({
     required String goalId,
@@ -311,7 +310,7 @@ class DashboardScreen extends StatelessWidget {
           // THE NEW CHECKMARK BUTTON
           InkWell(
             onTap: () async {
-              // Trigger the completion! The stream will auto-refresh and hide this card.
+              // Trigger the completion, The stream will auto-refresh and hide this card.
               await db.completeGoal(uid: uid, goalId: goalId);
             },
             borderRadius: BorderRadius.circular(30),
