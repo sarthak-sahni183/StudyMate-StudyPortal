@@ -213,6 +213,7 @@ class DashboardScreen extends StatelessWidget {
                   // --- ACTION CARDS (Remaining) ---
                   // --- TODAY OVERVIEW ---
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
                     child: Column(
@@ -226,7 +227,10 @@ class DashboardScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        Column(
+                        Wrap(
+                          alignment: WrapAlignment.spaceEvenly,
+                          spacing: 12,
+                          runSpacing: 12,
                           children: [    
                             buildOverviewCard(
                               title: "${user.totalStudyTime} min", 
@@ -234,14 +238,12 @@ class DashboardScreen extends StatelessWidget {
                               color: Colors.green.shade50, 
                               icon: Icons.watch_later
                             ),
-                            const SizedBox(height: 12),
                             buildOverviewCard(
                               title: "${user.totalSessions}", 
                               subtitle: "Total Sessions", 
                               color: Colors.orange.shade50, 
                               icon: Icons.menu_book
                             ),
-                            const SizedBox(height: 12),
                             buildOverviewCard(
                               title: "${user.avgProductivity}/10", 
                               subtitle: "Avg. Productivity", 

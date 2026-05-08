@@ -81,7 +81,6 @@ class _StudySessionScreenState extends State<StudySessionScreen> {
         uid: uid,
         sessionId: _activeSessionId!,
         productivityRating: _productivity.toInt(),
-        duration: _durationMinutes
       );
 
       ScaffoldMessenger.of(context).showSnackBar(

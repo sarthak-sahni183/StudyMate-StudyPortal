@@ -178,90 +178,88 @@ class DatabaseProvider with ChangeNotifier {
   /// 2. Called when the session ends and the user submits their rating
   /// 2. Called when the session ends and the user submits their rating
   /// Notice we added 'duration' so we can add it to the user's total!
+  /// 2. Called when the session ends and the user submits their rating
+  /// 2. Called when the session ends and the user submits their rating
   Future<void> finishAndRateSession({
     required String uid,
     required String sessionId,
     required int productivityRating,
-    required int duration, // NEW PARAMETER
+    // REMOVED 'duration' parameter - we calculate it automatically now!
   }) async {
     try {
-      // 1. Update the specific session document
-      await _db
-          .collection('users')
-          .doc(uid)
-          .collection('sessions')
-          .doc(sessionId)
-          .update({
+      // --- 1. CALCULATE ACTUAL ELAPSED TIME ---
+      DocumentReference sessionRef = _db.collection('users').doc(uid).collection('sessions').doc(sessionId);
+      DocumentSnapshot sessionSnap = await sessionRef.get();
+      
+      if (!sessionSnap.exists) return;
+      
+      Timestamp startTime = sessionSnap['startTime'];
+      int actualDurationMinutes = DateTime.now().difference(startTime.toDate()).inMinutes;
+      
+      // If they finished in less than 60 seconds, give them at least 1 minute of credit
+      if (actualDurationMinutes < 1) actualDurationMinutes = 1;
+
+      // --- 2. UPDATE SESSION DOCUMENT ---
+      await sessionRef.update({
         'productivity': productivityRating,
         'endTime': FieldValue.serverTimestamp(), 
+        'actualDuration': actualDurationMinutes, // We now save the TRUE time to the session!
         'isCompleted': true,
       });
 
-      // 2. Mathematically update the User's Dashboard Stats
-      // 2. Mathematically update the User's Dashboard Stats
+      // --- 3. MATHEMATICALLY UPDATE THE USER'S DASHBOARD STATS ---
       DocumentReference userRef = _db.collection('users').doc(uid);
+      DocumentSnapshot userDoc = await userRef.get();
+      if (!userDoc.exists) return;
+
+      UserModel user = UserModel.fromFirestore(userDoc);
+
+      int newTotalSessions = user.totalSessions + 1;
+      // FIX: Add the ACTUAL duration, not the planned duration!
+      int newTotalTime = user.totalStudyTime + actualDurationMinutes;
+      double newAvgProductivity = ((user.avgProductivity * user.totalSessions) + productivityRating) / newTotalSessions;
+
+      // --- 4. THE STREAK & WEEK BUBBLE MATH ---
+      DateTime now = DateTime.now();
+      DateTime today = DateTime(now.year, now.month, now.day);
       
-      await _db.runTransaction((transaction) async {
-        DocumentSnapshot userDoc = await transaction.get(userRef);
-        if (!userDoc.exists) return;
+      int newStreak = user.streak;
+      List<bool> newWeekActivity = List.from(user.weekActivity);
+      int todayIndex = now.weekday - 1; 
 
-        UserModel user = UserModel.fromFirestore(userDoc);
-
-        // --- 1. Basic Stats Math ---
-        int newTotalSessions = user.totalSessions + 1;
-        int newTotalTime = user.totalStudyTime + duration;
-        double newAvgProductivity = ((user.avgProductivity * user.totalSessions) + productivityRating) / newTotalSessions;
-
-        // --- 2. THE STREAK & WEEK BUBBLE MATH ---
-        DateTime now = DateTime.now();
-        DateTime today = DateTime(now.year, now.month, now.day); // Strip the time out
+      if (user.lastSessionDate == null) {
+        newStreak = 1;
+        newWeekActivity[todayIndex] = true;
+      } else {
+        DateTime lastSession = DateTime(
+          user.lastSessionDate!.year, 
+          user.lastSessionDate!.month, 
+          user.lastSessionDate!.day
+        );
         
-        int newStreak = user.streak;
-        List<bool> newWeekActivity = List.from(user.weekActivity);
-        
-        // Dart weekdays: 1 = Monday, 7 = Sunday. We subtract 1 to get array index (0-6)
-        int todayIndex = now.weekday - 1; 
+        int daysDifference = today.difference(lastSession).inDays;
 
-        if (user.lastSessionDate == null) {
-          // First session ever!
-          newStreak = 1;
-          newWeekActivity[todayIndex] = true;
-        } else {
-          DateTime lastSession = DateTime(
-            user.lastSessionDate!.year, 
-            user.lastSessionDate!.month, 
-            user.lastSessionDate!.day
-          );
-          
-          int daysDifference = today.difference(lastSession).inDays;
-
-          // Handle Week Activity Reset (If a new week started, wipe the bubbles clean)
-          if (daysDifference >= 7 || now.weekday < user.lastSessionDate!.weekday) {
-             newWeekActivity = [false, false, false, false, false, false, false];
-          }
-          // Light up today's bubble!
-          newWeekActivity[todayIndex] = true;
-
-          // Handle Streak
-          if (daysDifference == 1) {
-            // Studied yesterday! Streak goes up!
-            newStreak += 1;
-          } else if (daysDifference > 1) {
-            // Missed a day. Streak resets to 1.
-            newStreak = 1;
-          }
-          // If daysDifference == 0, they already studied today, so streak stays exactly the same!
+        if (daysDifference >= 7 || now.weekday < user.lastSessionDate!.weekday) {
+           newWeekActivity = [false, false, false, false, false, false, false];
         }
+        
+        newWeekActivity[todayIndex] = true;
 
-        // --- 3. Push everything to Firebase ---
-        transaction.update(userRef, {
-          'totalSessions': newTotalSessions,
-          'totalStudyTime': newTotalTime,
-          'avgProductivity': double.parse(newAvgProductivity.toStringAsFixed(1)),
-          'streak': newStreak,
-          'weekActivity': newWeekActivity,
-          'lastSessionDate': FieldValue.serverTimestamp(), // Update the date for next time!
-        });
+        if (daysDifference == 1) {
+          newStreak += 1;
+        } else if (daysDifference > 1) {
+          newStreak = 1;
+        }
+      }
+
+      // --- 5. Push everything to Firebase ---
+      await userRef.update({
+        'totalSessions': newTotalSessions,
+        'totalStudyTime': newTotalTime,
+        'avgProductivity': double.parse(newAvgProductivity.toStringAsFixed(1)),
+        'streak': newStreak,
+        'weekActivity': newWeekActivity,
+        'lastSessionDate': FieldValue.serverTimestamp(), 
       });
 
     } catch (e) {
